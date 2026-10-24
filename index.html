@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Color-Sequence Image Encoder</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/grid.css">
+  <link rel="stylesheet" href="css/analysis.css">
+  <link rel="stylesheet" href="css/text.css">
+</head>
+<body>
+  <header class="app-header"><h1>Color-Sequence Image Encoder</h1></header>
+  <main class="app-main">
+    <section class="panel panel-grid" aria-labelledby="h-grid">
+      <h2 id="h-grid">Page</h2>
+      <div class="grid-scroll"><canvas id="grid-canvas" class="grid-canvas" aria-label="Encoded page grid"></canvas></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-size">
+      <h2 id="h-size">Page size</h2>
+      <div class="field-row">
+        <label for="input-width">Width W (columns, 1-256)</label>
+        <input id="input-width" type="number" min="1" max="256" value="10">
+      </div>
+      <div class="field-row">
+        <label for="input-height">Initial height H (rows, 1-512)</label>
+        <input id="input-height" type="number" min="1" max="512" value="20">
+      </div>
+      <div class="button-row">
+        <button id="btn-apply-size" type="button">Apply to this page</button>
+        <button id="btn-new-page" type="button">New page</button>
+      </div>
+    </section>
+
+    <section id="batch" class="panel" aria-labelledby="h-batch">
+      <h2 id="h-batch">Automatic page generation</h2>
+      <p>Creates the pages one after another. Each page is filled completely (until it closes) before the next page is created.</p>
+      <div class="field-row"><label for="batch-count">Number of pages (1-500)</label><input id="batch-count" type="number" min="1" max="500" value="5"></div>
+      <div class="field-row"><label for="batch-width">Width W (columns)</label><input id="batch-width" type="number" min="1" max="256" value="10"></div>
+      <div class="field-row"><label for="batch-height">Initial height H (rows)</label><input id="batch-height" type="number" min="1" max="512" value="20"></div>
+      <div class="field-row"><label for="batch-seed">Seed (optional, for a repeatable run)</label><input id="batch-seed" type="number" min="0"></div>
+      <div class="button-row"><button id="btn-batch-start" type="button">Create and fill pages</button><button id="btn-batch-stop" type="button" disabled>Stop</button></div>
+      <p><output id="batch-status" role="status"></output></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-manual">
+      <h2 id="h-manual">Manual writing</h2>
+      <div id="palette" class="palette" role="group" aria-label="Symbol palette"></div>
+      <p>Selected symbol: <output id="selected-symbol"></output></p>
+      <button id="btn-write" type="button">Write</button>
+    </section>
+
+    <section class="panel" aria-labelledby="h-random">
+      <h2 id="h-random">Random writing</h2>
+      <div class="button-row">
+        <button id="btn-random-start" type="button">Start</button>
+        <button id="btn-random-pause" type="button">Pause</button>
+        <button id="btn-random-resume" type="button">Resume</button>
+        <button id="btn-random-stop" type="button">Stop</button>
+      </div>
+      <div class="field-row">
+        <label for="input-speed">Speed (symbols per second)</label>
+        <input id="input-speed" type="range" min="1" max="200" value="20">
+      </div>
+      <p>State: <output id="random-status">idle</output></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-status">
+      <h2 id="h-status">Status</h2>
+      <dl class="status-list">
+        <dt>Dimensions</dt><dd id="stat-size"></dd>
+        <dt>Next position</dt><dd id="stat-cursor"></dd>
+        <dt>Page status</dt><dd id="stat-status"></dd>
+        <dt>Symbols written</dt><dd id="stat-count"></dd>
+      </dl>
+      <p id="message" class="message" role="status"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-files">
+      <h2 id="h-files">PNG files</h2>
+      <div class="button-row">
+        <button id="btn-export" type="button">Export PNG</button>
+        <label class="file-label" for="input-import">Import PNG</label>
+        <input id="input-import" class="file-input" type="file" accept="image/png">
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-pages">
+      <h2 id="h-pages">Pages (session only)</h2>
+      <ul id="page-list" class="page-list"></ul>
+    </section>
+
+    <section class="panel panel-wide" aria-labelledby="h-units">
+      <h2 id="h-units">Numerical units (base 5)</h2>
+      <button id="btn-toggle-units" type="button" aria-expanded="false" aria-controls="units-panel">Show base-5 conversion</button>
+      <div id="units-panel" hidden>
+      <table class="units-table">
+        <thead><tr><th scope="col">Column</th><th scope="col">Digits</th><th scope="col">Decimal</th><th scope="col">State</th></tr></thead>
+        <tbody id="units-body"></tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="text-codec" class="panel panel-wide" aria-labelledby="h-text">
+      <h2 id="h-text">Text and color pages</h2>
+      <div class="field-row">
+        <label for="text-input">Text to encode (words are separated by whitespace; at most 1024 characters per word)</label>
+        <textarea id="text-input" class="text-area" rows="6"></textarea>
+      </div>
+      <div class="button-row">
+        <label for="text-width">Width W</label><input id="text-width" type="number" min="1" max="256" value="10">
+        <label for="text-height">Initial height H</label><input id="text-height" type="number" min="1" max="512" value="20">
+        <button id="btn-text-encode" type="button">Encode text into pages</button>
+        <button id="btn-text-save" type="button" disabled>Save All Pages to Disk</button>
+        <button id="btn-text-stop" type="button" disabled>Stop</button>
+      </div>
+      <progress id="text-progress" max="100" value="0"></progress>
+      <p><output id="text-status" role="status"></output></p>
+      <h3>Pages to text</h3>
+      <div class="button-row">
+        <label for="text-decode-files">PNG pages (names with page numbers, e.g. page_0001.png)</label>
+        <input id="text-decode-files" type="file" accept="image/png" multiple>
+        <button id="btn-text-decode-run" type="button">Decode last generated pages</button>
+      </div>
+      <label for="text-output">Decoded text</label>
+      <textarea id="text-output" class="text-area" rows="6" readonly></textarea>
+    </section>
+
+    <section id="analysis" class="panel panel-wide analysis-panel" aria-labelledby="h-analysis">
+      <h2 id="h-analysis">Pattern analysis (read-only)</h2>
+      <p id="analysis-legend"></p>
+      <div class="analysis-filters">
+        <div class="field-row"><label for="analysis-pages">Pages (none selected = all valid pages)</label><select id="analysis-pages" multiple></select></div>
+        <div class="field-row"><label for="analysis-type">Analysis type</label>
+          <select id="analysis-type">
+            <option value="all">All</option><option value="frequency">Frequencies</option><option value="ngram">N-grams</option>
+            <option value="repeats">Repeated substrings</option><option value="approx">Approximate matches</option><option value="clustering">Hierarchical clusters</option>
+            <option value="information">Entropy and mutual information</option><option value="markov">Markov models</option>
+            <option value="baseline">Randomized baselines</option><option value="spatial">Spatial patterns</option><option value="hypotheses">Hypotheses</option>
+          </select></div>
+        <div class="field-row"><label for="analysis-min-count">Minimum frequency</label><input id="analysis-min-count" type="number" min="1" value="2"></div>
+        <div class="field-row"><label for="analysis-pattern-length">Pattern length n (n-grams, baselines, spatial)</label><input id="analysis-pattern-length" type="number" min="1" max="8" value="2"></div>
+        <div class="field-row"><label for="analysis-min-repeat">Minimum repeated-substring length</label><input id="analysis-min-repeat" type="number" min="1" value="3"></div>
+        <div class="field-row"><label for="analysis-threshold">Similarity threshold (0-1)</label><input id="analysis-threshold" type="number" min="0.1" max="1" step="0.05" value="0.75"></div>
+        <div class="field-row"><label for="analysis-simulations">Simulations</label><input id="analysis-simulations" type="number" min="10" max="5000" value="500"></div>
+        <div class="field-row"><label for="analysis-seed">Random seed</label><input id="analysis-seed" type="number" min="1" value="1"></div>
+        <div class="field-row"><label for="analysis-split-mode">Held-out split</label>
+          <select id="analysis-split-mode"><option value="page">By page</option><option value="unit">By unit</option></select></div>
+      </div>
+      <fieldset class="analysis-hypotheses">
+        <legend>Record a hypothesis</legend>
+        <div class="button-row">
+          <label for="hyp-kind">Kind</label>
+          <select id="hyp-kind"><option value="unit-prefix">Units start with (color codes)</option><option value="transition">Neighboring pair a then b</option></select>
+          <label for="hyp-symbols">Color codes (1-5, space separated)</label>
+          <input id="hyp-symbols" type="text" inputmode="numeric">
+          <button id="btn-hyp-add" type="button">Add hypothesis</button>
+        </div>
+        <ul id="hyp-list" class="page-list"></ul>
+      </fieldset>
+      <div class="button-row">
+        <button id="btn-analysis-run" type="button">Run analysis</button>
+        <label for="report-lang">Report language</label>
+        <select id="report-lang"><option value="fa">فارسی</option><option value="en">English</option></select>
+        <button id="btn-report-download" type="button" disabled>Download report (text)</button>
+        <output id="analysis-status" role="status"></output>
+      </div>
+      <div id="analysis-report" class="analysis-report" aria-live="polite"></div>
+      <div id="analysis-warnings"></div>
+      <div class="button-row"><button id="btn-toggle-details" type="button" aria-expanded="false" aria-controls="analysis-details">Show detailed result tables</button></div>
+      <div id="analysis-details" hidden><div id="analysis-results"></div></div>
+    </section>
+
+    <section id="volume" class="panel panel-wide" aria-labelledby="h-volume">
+      <h2 id="h-volume">3D layers (optional, needs WebGL and internet access to load Three.js)</h2>
+      <div class="button-row"><button id="btn-volume-open" type="button">Open 3D view</button><output id="volume-status" role="status"></output></div>
+      <div id="volume-view" class="volume-view"></div>
+    </section>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

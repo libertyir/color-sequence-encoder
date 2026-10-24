@@ -1,0 +1,5 @@
+body { font-family: sans-serif; margin: 1.5rem; color: #222; background: #fff; }
+#results { list-style: none; padding: 0; }
+#results li { padding: 0.25rem 0.5rem; border-left: 0.25rem solid; margin-bottom: 0.125rem; }
+.test-pass { border-color: #2e7d32; }
+.test-fail { border-color: #c62828; font-weight: bold; }

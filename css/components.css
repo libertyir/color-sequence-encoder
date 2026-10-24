@@ -1,0 +1,13 @@
+button, .file-label { padding: 0.4rem 0.9rem; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); font: inherit; cursor: pointer; }
+button:disabled { background: #e0e0e0; border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+input[type="number"] { padding: 0.3rem; font: inherit; width: 8rem; }
+input:disabled { background: #eeeeee; }
+.file-input { max-width: 14rem; }
+.message { min-height: 1.4rem; margin: 0.5rem 0 0; }
+.message[data-kind="error"] { color: var(--error); font-weight: bold; }
+.units-table { border-collapse: collapse; width: 100%; font-family: monospace; }
+.units-table th, .units-table td { border: 1px solid var(--border); padding: 0.2rem 0.5rem; text-align: left; word-break: break-all; }
+.page-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.page-list li { display: flex; gap: 0.4rem; }
+.page-list button[aria-current="true"] { background: var(--focus); border-color: var(--focus); }
+#stat-status[data-status="invalid"] { color: var(--error); font-weight: bold; }

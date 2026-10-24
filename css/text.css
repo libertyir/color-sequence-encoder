@@ -1,0 +1,3 @@
+.text-area { display: block; width: 100%; min-height: 8rem; padding: 0.4rem; font: inherit; resize: vertical; }
+#text-progress { width: 100%; height: 1rem; }
+#text-codec h3 { margin: 1rem 0 0.25rem; }
